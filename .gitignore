@@ -1,0 +1,23 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+venv/
+
+# Environment variables
+.env
+
+# VS Code settings
+.vscode/
+
+# OS-specific
+Thumbs.db  # Windows
+
+# Log files
+*.log
+
+# MySQL dumps
+*.sql
+*.dump
