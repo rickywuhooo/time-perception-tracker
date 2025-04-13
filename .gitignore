@@ -21,3 +21,6 @@ Thumbs.db  # Windows
 # MySQL dumps
 *.sql
 *.dump
+
+# database
+instance/
