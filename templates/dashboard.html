@@ -6,9 +6,48 @@
     <title>Dashboard</title>
 </head>
 <body>
-    <h1>Welcome to your Time Perception Tracker</h1>
+    <h1>Time Perception Tracker</h1>
 
+    <h2>Create a New Task Category</h2>
+    <form method="POST">
+        {{ tasktype_form.hidden_tag() }}
+        {{ tasktype_form.category.label }} {{ tasktype_form.category() }}<br>
+        {{ tasktype_form.priority_level.label }} {{ tasktype_form.priority_level() }}<br>
+        {{ tasktype_form.description.label }} {{ tasktype_form.description() }}<br>
+        <input type="hidden" name="add_task_type" value="1">
+        {{ tasktype_form.submit() }}
+    </form>
 
+    <hr>
+
+    <h2>Add a Task</h2>
+    <form method="POST">
+        {{ task_form.hidden_tag() }}
+        {{ task_form.task_name.label }} {{ task_form.task_name() }}<br>
+        {{ task_form.category.label }} {{ task_form.category() }}<br>
+        {{ task_form.estimate_time.label }} {{ task_form.estimate_time() }}<br>
+        {{ task_form.actual_time.label }} {{ task_form.actual_time() }}<br>
+        <input type="hidden" name="add_task" value="1">
+        {{ task_form.submit() }}
+    </form>
+
+    <hr>
+    
+    <h2>Your Logged Tasks</h2>
+    <ul>
+        {% for task in task_info %}
+            <li>
+                {{ task["task name"] }} | 
+                Category: {{ task["category"] }} | 
+                Priority: {{ task["priority"] }} | 
+                Estimated: {{ task["estimated"] }} min | 
+                Actual: {{ task["actual"] }} min | 
+                Date: {{ task["date created"] }}
+            </li>
+        {% endfor %}
+    </ul>
+    
+    <br>
 
     <a href="{{url_for('logout')}}">Logout</a>
 </body>

@@ -1,10 +1,12 @@
-from flask import Flask, render_template, url_for, redirect
+from flask import Flask, render_template, url_for, redirect, request
 from flask_sqlalchemy import SQLAlchemy # sqlite
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField
+from wtforms import StringField, PasswordField, SubmitField, SelectField, IntegerField, DateField
 from wtforms.validators import InputRequired, Length, ValidationError
 from flask_bcrypt import Bcrypt
+from datetime import datetime
+from flask_migrate import Migrate
 
 app = Flask(__name__)
 
@@ -13,6 +15,8 @@ app.config['SECRET_KEY'] = 'secretkey' # for session cookies
 db = SQLAlchemy(app) # creates database instance
 
 bcrypt = Bcrypt(app)
+
+migrate = Migrate(app, db)
 
 
 login_manager = LoginManager()
@@ -39,7 +43,7 @@ class TaskType(db.Model):
     type_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     priority_level = db.Column(db.Integer)
     category = db.Column(db.String(50), nullable=False)
-    description = (db.String(300))
+    description = db.Column(db.String(300))
 
 class Task(db.Model):
     __tablename__ = 'Tasks'
@@ -93,6 +97,35 @@ class LoginForm(FlaskForm):
     
     submit = SubmitField("Login")
 
+
+class TaskTypeForm(FlaskForm):
+    category = StringField(
+        "Category",
+        validators=[InputRequired(), Length(max=50)])
+    priority_level = SelectField(
+        "Priority Level",
+        choices = [(1, "1 - Low"), (2, "2 - Medium"), (3, "3 - High")],
+        coerce = int,
+        validators = [InputRequired()])
+    description = StringField(
+        "Description (optional)",
+        validators = [Length(max=300)])
+    submit = SubmitField("Add Task Category")
+
+class TaskForm(FlaskForm):
+    task_name = StringField(
+        "Task Name", 
+        validators=[InputRequired()])
+    category = SelectField(
+        "Category",
+        coerce=int) # string to int
+    estimate_time = IntegerField(
+        "Estimated Time (minutes)",
+        validators=[InputRequired()])
+    actual_time = IntegerField(
+        "Actual Time (minutes)",
+        validators=[InputRequired()])
+    submit = SubmitField("Add Task")
     
 
 @app.route('/')
@@ -114,7 +147,54 @@ def login():
 @app.route('/dashboard', methods=['GET', 'POST'])
 @login_required
 def dashboard():
-    return render_template('dashboard.html')
+
+    # adding tasks
+    task_form = TaskForm()
+    task_form.category.choices = [(t.type_id, t.category) for t in TaskType.query.all()]
+    
+    if task_form.validate_on_submit() and 'add_task' in request.form:
+        new_task = Task(
+            task_name = task_form.task_name.data,
+            type_id = task_form.category.data,
+            user_id = current_user.user_id)
+        db.session.add(new_task)
+        db.session.commit()
+
+        new_log = TimeLog(
+            task_id = new_task.task_id,
+            estimate_time = task_form.estimate_time.data,
+            actual_time = task_form.actual_time.data,
+            date_logged = datetime.now().strftime("%Y-%m-%d"))
+        db.session.add(new_log)
+        db.session.commit()
+        return redirect(url_for('dashboard'))
+
+    # adding task categories
+    tasktype_form = TaskTypeForm()
+    if tasktype_form.validate_on_submit() and 'add_task_type' in request.form:
+        new_type = TaskType(
+            category = tasktype_form.category.data,
+            priority_level = tasktype_form.priority_level.data,
+            description = tasktype_form.description.data)
+        db.session.add(new_type)
+        db.session.commit()
+        return redirect(url_for('dashboard'))
+
+
+    user_tasks = Task.query.filter_by(user_id=current_user.user_id).all()
+    task_info = []
+    for task in user_tasks:
+        log = TimeLog.query.filter_by(task_id=task.task_id).first()
+        category = TaskType.query.get(task.type_id)
+        task_info.append({
+            "task name": task.task_name,
+            "category": category.category,
+            "priority": category.priority_level,
+            "estimated": log.estimate_time,
+            "actual": log.actual_time,
+            "date created": log.date_logged})
+        
+    return render_template('dashboard.html', task_form=task_form, tasktype_form=tasktype_form, task_info=task_info)
 
 
 @app.route('/logout', methods=['GET', 'POST'])

@@ -24,3 +24,7 @@ Thumbs.db  # Windows
 
 # database
 instance/
+
+# ignore migration environment files
+migrations/__pycache__
+*.pyc
