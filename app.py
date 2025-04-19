@@ -34,6 +34,28 @@ class User(db.Model, UserMixin):
     def get_id(self):
         return str(self.user_id)
 
+class TaskType(db.Model):
+    __tablename__ = 'TaskTypes'
+    type_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    priority_level = db.Column(db.Integer)
+    category = db.Column(db.String(50), nullable=False)
+    description = (db.String(300))
+
+class Task(db.Model):
+    __tablename__ = 'Tasks'
+    task_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    task_name = db.Column(db.String(100), nullable=False)
+    type_id = db.Column(db.Integer, db.ForeignKey('TaskTypes.type_id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('Users.user_id'), nullable=False)
+
+class TimeLog(db.Model):
+    __tablename__ = 'TimeLogs'
+    log_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    task_id = db.Column(db.Integer, db.ForeignKey('Tasks.task_id'), nullable=False)
+    estimate_time = db.Column(db.Integer, nullable=False)
+    actual_time = db.Column(db.Integer, nullable=False)
+    date_logged = db.Column(db.String(50), nullable=False)
+
 class RegisterForm(FlaskForm):
     first_name = StringField(
         validators=[InputRequired(), Length(min=2, max=50)],
