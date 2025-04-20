@@ -34,20 +34,33 @@
     <hr>
     
     <h2>Your Logged Tasks</h2>
-    <ul>
-        {% for task in task_info %}
-            <li>
-                {{ task["task name"] }} | 
-                Category: {{ task["category"] }} | 
-                Priority: {{ task["priority"] }} | 
-                Estimated: {{ task["estimated"] }} min | 
-                Actual: {{ task["actual"] }} min | 
-                Date: {{ task["date created"] }}
-            </li>
-        {% endfor %}
-    </ul>
+    <table border="1" cellpadding="5" cellspacing="0">
+        <thead>
+            <tr>
+                <th>Task Name</th>
+                <th>Category</th>
+                <th>Priority</th>
+                <th>Estimated (min)</th>
+                <th>Actual (min)</th>
+                <th>Date Created</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for task in task_info %}
+            <tr>
+                <td>{{ task["task name"] }}</td>
+                <td>{{ task["category"] }}</td>
+                <td>{{ task["priority"] }}</td>
+                <td>{{ task["estimated"] }}</td>
+                <td>{{ task["actual"] }}</td>
+                <td>{{ task["date created"] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
     
     <br>
+    
 
     <a href="{{url_for('logout')}}">Logout</a>
 </body>
