@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     
@@ -13,11 +14,15 @@
         <div class="card">
             <h2>Estimation Accuracy</h2>
             <div>
-                <p><strong>Overestimated:</strong> {{ analysis.over }}</p>
-                <p><strong>Underestimated:</strong> {{ analysis.under }}</p>
-                <p><strong>Accurate:</strong> {{ analysis.accurate }}</p>
+                <p><strong>Overestimated:</strong> <span id="over-count">{{ analysis.over }}</span></p>
+                <p><strong>Underestimated:</strong> <span id="under-count">{{ analysis.under }}</span></p>
+                <p><strong>Accurate:</strong> <span id="accurate-count">{{ analysis.accurate }}</span></p>
+            </div>
+            <div class="chart-container">
+                <canvas id="analysisChart"></canvas>
             </div>
         </div>
+
 
         <div class="card">
             <h2>Create a New Task Category</h2>
@@ -145,5 +150,6 @@
         
         <a href="{{url_for('logout')}}">Logout</a>
     </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
