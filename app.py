@@ -104,7 +104,7 @@ class TaskTypeForm(FlaskForm):
         validators=[InputRequired(), Length(max=50)])
     priority_level = SelectField(
         "Priority Level",
-        choices = [(1, "1 - Low"), (2, "2 - Medium"), (3, "3 - High")],
+        choices = [(1, "Low"), (2, "Medium"), (3, "High")],
         coerce = int,
         validators = [InputRequired()])
     description = StringField(
@@ -187,14 +187,62 @@ def dashboard():
         log = TimeLog.query.filter_by(task_id=task.task_id).first()
         category = TaskType.query.get(task.type_id)
         task_info.append({
+            "task_id": task.task_id,
             "task name": task.task_name,
             "category": category.category,
             "priority": category.priority_level,
             "estimated": log.estimate_time,
             "actual": log.actual_time,
             "date created": log.date_logged})
-        
-    return render_template('dashboard.html', task_form=task_form, tasktype_form=tasktype_form, task_info=task_info)
+
+    categories = TaskType.query.all()
+
+    return render_template(
+        'dashboard.html', 
+        task_form=task_form, 
+        tasktype_form=tasktype_form, 
+        task_info=task_info, 
+        categories=categories)
+
+@app.route('/delete_task/<int:task_id>', methods=['POST'])
+@login_required
+def delete_task(task_id):
+    task = Task.query.get_or_404(task_id)
+    
+    # checking the task belongs to the current user
+    if task.user_id != current_user.user_id:
+        return redirect(url_for('dashboard'))
+
+    # need to delete the associated TimeLog first
+    log = TimeLog.query.filter_by(task_id=task_id).first()
+    if log:
+        db.session.delete(log)
+
+    # delete the task
+    db.session.delete(task)
+    db.session.commit()
+    
+    return redirect(url_for('dashboard'))
+
+@app.route('/delete_category/<int:type_id>', methods=['POST'])
+@login_required
+def delete_category(type_id):
+    category = TaskType.query.get_or_404(type_id)
+
+    tasks = Task.query.filter_by(type_id=type_id, user_id=current_user.user_id).all()
+
+    for task in tasks:
+        # need to delete the associated TimeLog first
+        log = TimeLog.query.filter_by(task_id=task.task_id).first()
+        if log:
+            db.session.delete(log)
+        db.session.delete(task)
+
+    # delete the category
+    db.session.delete(category)
+    db.session.commit()
+
+    return redirect(url_for('dashboard'))
 
 
 @app.route('/logout', methods=['GET', 'POST'])
