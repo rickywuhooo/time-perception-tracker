@@ -7,6 +7,7 @@ from wtforms.validators import InputRequired, Length, ValidationError
 from flask_bcrypt import Bcrypt
 from datetime import datetime
 from flask_migrate import Migrate
+from sqlalchemy import text
 
 app = Flask(__name__)
 
@@ -338,6 +339,60 @@ def update_category(type_id):
         return redirect(url_for('dashboard'))
 
     return render_template('update_category.html', form=form, category=category)
+
+@app.route('/run_query', methods=['POST'])
+@login_required
+def run_query():
+    query_name = request.form.get('query_name')
+    query_results = []
+    query_headers = []
+
+    if query_name == 'all_tasks_sorted':
+        result = db.session.execute(
+            text("""
+            SELECT Tasks.task_name, TimeLogs.estimate_time, TimeLogs.actual_time
+            FROM Tasks
+            JOIN TimeLogs ON Tasks.task_id = TimeLogs.task_id
+            WHERE Tasks.user_id = :uid
+            ORDER BY TimeLogs.estimate_time ASC
+        """), {'uid': current_user.user_id})
+        query_headers = ['Task Name', 'Estimated Time', 'Actual Time']
+        query_results = list(result)
+
+    elif query_name == 'most_accurate_tasks':
+        result = db.session.execute(
+            text("""
+            SELECT Tasks.task_name, TimeLogs.estimate_time, TimeLogs.actual_time
+            FROM Tasks
+            JOIN TimeLogs ON Tasks.task_id = TimeLogs.task_id
+            WHERE Tasks.user_id = :uid AND TimeLogs.estimate_time = TimeLogs.actual_time
+        """), {'uid': current_user.user_id})
+        query_headers = ['Task Name', 'Estimated Time', 'Actual Time']
+        query_results = list(result)
+
+    elif query_name == 'tasks_under_30':
+        result = db.session.execute(
+            text("""
+            SELECT task_name, actual_time
+            FROM Tasks
+            JOIN TimeLogs ON Tasks.task_id = TimeLogs.task_id
+            WHERE Tasks.user_id = :uid AND actual_time < 30;
+        """), {'uid': current_user.user_id})
+        query_headers = ['Task Name', 'Actual Time']
+        query_results = list(result)
+
+    # Pass results to dashboard template
+    return render_template(
+        'dashboard.html',
+        task_form=TaskForm(),
+        tasktype_form=TaskTypeForm(),
+        task_info=[],
+        categories=TaskType.query.all(),
+        analysis=analyze_estimates(current_user.user_id),
+        query_results=query_results,
+        query_headers=query_headers
+    )
+
 
 @app.route('/logout', methods=['GET', 'POST'])
 @login_required

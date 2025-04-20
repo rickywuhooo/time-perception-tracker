@@ -147,6 +147,42 @@
         </div>
 
         <br>
+        <div class="card">
+            <h2>Run a Predefined SQL Query</h2>
+            <form method="POST" action="{{ url_for('run_query') }}">
+                <select name="query_name">
+                    <option value="all_tasks_sorted">All Tasks Sorted by Estimated Time</option>
+                    <option value="most_accurate_tasks">Most Accurate Tasks</option>
+                    <option value="tasks_under_30">Tasks Complete Under 30 Minutes</option>
+                </select>
+                <button type="submit">Run Query</button>
+            </form>
+        </div>
+        
+        {% if query_results %}
+            <div class="card">
+                <h3>Query Results</h3>
+                <table border="1">
+                    <thead>
+                        <tr>
+                            {% for header in query_headers %}
+                                <th>{{ header }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in query_results %}
+                            <tr>
+                                {% for value in row %}
+                                    <td>{{ value }}</td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+        <br>
         
         <a href="{{url_for('logout')}}">Logout</a>
     </div>
