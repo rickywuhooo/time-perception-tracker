@@ -141,6 +141,28 @@ class UpdateTaskTypeForm(FlaskForm):
         validators=[Length(max=300)])
     submit = SubmitField("Update Category")
 
+def analyze_estimates(user_id):
+    tasks = Task.query.filter_by(user_id=user_id).all()
+    over = 0
+    under = 0
+    accurate = 0
+    
+    for task in tasks:
+        log = TimeLog.query.filter_by(task_id=task.task_id).first()
+        if log:
+            if log.estimate_time > log.actual_time:
+                over += 1
+            elif log.estimate_time < log.actual_time:
+                under += 1
+            else:
+                accurate += 1
+                
+    return {
+        'over': over,
+        'under': under,
+        'accurate': accurate
+    }
+
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -208,6 +230,8 @@ def dashboard():
             "actual": log.actual_time,
             "date created": log.date_logged})
 
+    analysis = analyze_estimates(current_user.user_id)
+
     categories = TaskType.query.all()
 
     return render_template(
@@ -215,7 +239,8 @@ def dashboard():
         task_form=task_form, 
         tasktype_form=tasktype_form, 
         task_info=task_info, 
-        categories=categories)
+        categories=categories,
+        analysis=analysis)
 
 @app.route('/delete_task/<int:task_id>', methods=['POST'])
 @login_required
