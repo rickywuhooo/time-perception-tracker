@@ -125,8 +125,21 @@ class TaskForm(FlaskForm):
     actual_time = IntegerField(
         "Actual Time (minutes)",
         validators=[InputRequired()])
-    submit = SubmitField("Add Task")
-    
+    submit = SubmitField("Submit")
+
+class UpdateTaskTypeForm(FlaskForm):
+    category = StringField(
+        "Category",
+        validators=[InputRequired(), Length(max=50)])
+    priority_level = SelectField(
+        "Priority Level",
+        choices=[(1, "Low"), (2, "Medium"), (3, "High")],
+        coerce=int,
+        validators=[InputRequired()])
+    description = StringField(
+        "Description (optional)",
+        validators=[Length(max=300)])
+    submit = SubmitField("Update Category")
 
 @app.route('/')
 def home():
@@ -244,6 +257,62 @@ def delete_category(type_id):
 
     return redirect(url_for('dashboard'))
 
+@app.route('/update_task/<int:task_id>', methods=['GET', 'POST'])
+@login_required
+def update_task(task_id):
+    task = Task.query.get_or_404(task_id)
+    
+    if task.user_id != current_user.user_id:
+        return redirect(url_for('dashboard'))
+
+    task_form = TaskForm()
+    task_form.category.choices = [(t.type_id, t.category) for t in TaskType.query.all()]
+    
+    if request.method == 'GET':
+        task_form.task_name.data = task.task_name
+        task_form.category.data = task.type_id
+        log = TimeLog.query.filter_by(task_id=task_id).first()
+        if log:
+            task_form.estimate_time.data = log.estimate_time
+            task_form.actual_time.data = log.actual_time
+    
+   
+    if task_form.validate_on_submit():
+        # update task details
+        task.task_name = task_form.task_name.data
+        task.type_id = task_form.category.data
+        
+        # update time log details
+        log = TimeLog.query.filter_by(task_id=task_id).first()
+        if log:
+            log.estimate_time = task_form.estimate_time.data
+            log.actual_time = task_form.actual_time.data
+            log.date_logged = datetime.now().strftime("%Y-%m-%d")
+        
+        db.session.commit()
+        return redirect(url_for('dashboard'))
+    
+    return render_template('update_task.html', task_form=task_form, task=task)
+
+@app.route('/update_category/<int:type_id>', methods=['GET', 'POST'])
+@login_required
+def update_category(type_id):
+    category = TaskType.query.get_or_404(type_id)
+    
+    tasks = Task.query.filter_by(type_id=type_id, user_id=current_user.user_id).all()
+    if not tasks:
+        return redirect(url_for('dashboard'))  # redirect if no tasks are associated with this category
+
+    form = UpdateTaskTypeForm(obj=category)
+    
+    if form.validate_on_submit():
+        category.category = form.category.data
+        category.priority_level = form.priority_level.data
+        category.description = form.description.data
+        db.session.commit()
+        return redirect(url_for('dashboard'))
+
+    return render_template('update_category.html', form=form, category=category)
 
 @app.route('/logout', methods=['GET', 'POST'])
 @login_required

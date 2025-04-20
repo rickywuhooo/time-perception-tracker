@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Task</title>
+</head>
+<body>
+    <h1>Update Task</h1>
+
+    <form method="POST">
+        {{ task_form.hidden_tag() }}
+        {{ task_form.task_name.label }} {{ task_form.task_name() }}<br>
+        {{ task_form.category.label }} {{ task_form.category() }}<br>
+        {{ task_form.estimate_time.label }} {{ task_form.estimate_time() }}<br>
+        {{ task_form.actual_time.label }} {{ task_form.actual_time() }}<br>
+        {{ task_form.submit() }}
+    </form>
+
+    <br><br>
+    <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+</body>
+</html>
